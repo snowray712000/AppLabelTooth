@@ -1,4 +1,5 @@
 #%%
+from turtle import up
 import numpy as np
 import open3d as o3d
 from Easy import TpO3d
@@ -122,6 +123,10 @@ vert1.add_child(btnHelp)
 # 另存目前 lobj
 btnSaveAs = TpO3d.Button("Save As")
 vert1.add_child(btnSaveAs)
+
+# label -1 設定為最接近顏色
+btnAutoSetNoLabel = TpO3d.Button("Auto Set No Label")
+vert1.add_child(btnAutoSetNoLabel)
 
 # method 選擇
 methods = TpO3d.RadioButton(TpO3d.RadioButton.Type.HORIZ)
@@ -353,14 +358,43 @@ sliderSetValue.set_on_value_changed(fn_sliderSetValue_changed)
 
 
 def update_labels_and_colors(idxs):
-    idxs2 = np.array(idxs, dtype=np.int32)
-    AppGlobals.lobj[3][idxs2] = AppGlobals.setValue
+    if len(idxs) != 0:
+        idxs2 = np.array(idxs, dtype=np.int32)
+        AppGlobals.lobj[3][idxs2] = AppGlobals.setValue
     AppGlobals.mesh.vertex_colors = TpO3d.Vector3dVector(labels_to_colors_crown(AppGlobals.lobj[3]))    
     scene3d.clear_geometry()
     scene3d.add_geometry("mesh", AppGlobals.mesh, material=TpO3d.MaterialRecord.lazyMaterialRecord())    
         
 def resetCamera():
     scene.setup_camera(60, AppGlobals.mesh.get_axis_aligned_bounding_box(), [0, 0, 0])
+
+def set_nolabel_to_nearest_label(lobj):
+    v1: npt.NDArray[np.float32] = lobj[0]
+    l1: npt.NDArray[np.int8]  = lobj[3]
+    
+    # 取得有標籤的點雲，並建立KDTree
+    idx1 = l1 != -1
+    v2 = v1[idx1]
+    l2 = l1[idx1] # 後面會用到
+    pc = TpO3d.PointCloud()
+    pc.points = TpO3d.Vector3dVector(v2)
+    kdtree = TpO3d.KDTreeFlann(pc) # 後面會用到
+    
+    # 取得沒有標籤的點雲，並找出最近的標籤
+    idx2 = l1 == -1
+    v3 = v1[idx2]
+    if len(v3) != 0:
+        idx3 = np.array([kdtree.search_knn_vector_3d(a1,1)[1][0] for a1 in v3])        
+        l1[idx2] = l2[idx3] # 完成
+    
+    # 驗證
+    # from Easy.easyopen3d import easyo3d
+    # easyo3d.render(easyo3d.toMesh2(lobj))
+def fn_click_auto_set_no_label():
+    if AppGlobals.lobj is not None:        
+        set_nolabel_to_nearest_label(AppGlobals.lobj)
+        update_labels_and_colors([])
+btnAutoSetNoLabel.set_on_clicked(fn_click_auto_set_no_label)
     
 # 雙擊時，開啟檔案
 from Easy.LabeledObject import LabeledObject
