@@ -262,21 +262,30 @@ def fn_clickHelp():
 btnHelp.set_on_clicked(fn_clickHelp)
 
 def fn_clickInfer():
-    # 使用文件上傳方式發送POST請求
-    url = 'http://140.123.121.21:443/toothgum_seg-api/infer/lower_tooth/'
-    if tpInfer.selected_index == 2:
-        url = 'http://140.123.121.21:443/toothgum_seg-api/infer/upper_tooth/'
-    with open(AppGlobals.pathlobj, 'rb') as stl_file:
-        files = {'stl_file': stl_file}
-        datas = {'mode': 'lower'}
-        response = requests.post(url, files=files, data=datas)
-    # 檢查響應狀態碼
-    if response.status_code == 200:
-        print('請求成功！')
-    else:
-        print(f'請求失敗，狀態碼：{response.status_code}')
-    print(response.headers)
-    print(response.text[:256])
+    # try except
+    try:
+        # popup 訊息
+        winSettings.show_message_box("預測", "大約需要 10 秒，請耐心等待，按下確定後開始。")
+        # 使用文件上傳方式發送POST請求
+        url = 'http://140.123.121.21:443/toothgum_seg-api/infer/lower_tooth/'
+        if tpInfer.selected_index == 2:
+            url = 'http://140.123.121.21:443/toothgum_seg-api/infer/upper_tooth/'
+        with open(AppGlobals.pathlobj, 'rb') as stl_file:
+            files = {'stl_file': stl_file}
+            datas = {'mode': 'lower'}
+            response = requests.post(url, files=files, data=datas)
+        # 檢查響應狀態碼
+        if response.status_code == 200:
+            print('請求成功！')
+        else:
+            print(f'請求失敗，狀態碼：{response.status_code}')
+            winSettings.show_message_box("Error", f"請求失敗，狀態碼：{response.status_code}")
+            return 
+        print(response.headers)
+        print(response.text[:256])
+    except Exception as ex:
+        winSettings.show_message_box("Error", f"Error: {ex}")
+        return 
     
     # text 是 x y z label 一行，所以要 parse
     def text_to_data(text: str)->t.Tuple[npt.NDArray[np.float32], npt.NDArray[np.int8]]:
