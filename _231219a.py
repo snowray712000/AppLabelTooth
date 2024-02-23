@@ -1,5 +1,4 @@
 #%%
-from turtle import up
 import numpy as np
 import open3d as o3d
 from Easy import TpO3d
@@ -8,6 +7,9 @@ import numpy.typing as npt
 import linque as lq
 import os
 import glob
+from Easy.readSTL import readStlBinary_ToO3dMesh
+import requests
+
 #%%
 from enumSrcDataLObjSorted import enumSrcDataLObjSorted3
 from Easy.ColorsForCrown import labels_to_colors_crown
@@ -54,7 +56,7 @@ class AppGlobals:
 
         # exts = ['.stl', '.lobj', '.xyz']
         # exts = ['.stl']
-        exts = ['.lobj']
+        exts = ['.lobj', '.stl']
         r3 = lq.linque(r1).where(lambda a1: os.path.isfile(a1)).select(lambda a1: os.path.basename(a1)).where(lambda a1: os.path.splitext(a1)[1] in exts).to_list()
         # print(r3)
         
@@ -120,6 +122,19 @@ winSettings.add_child(vert1)
 btnHelp = TpO3d.Button("Help")
 vert1.add_child(btnHelp)
 
+# 預測
+hstackInfer = TpO3d.Horiz()
+vert1.add_child(hstackInfer)
+
+btnInfer = TpO3d.Button("預測")
+hstackInfer.add_child(btnInfer)
+
+# method 選擇
+tpInfer = TpO3d.RadioButton(TpO3d.RadioButton.Type.HORIZ)
+hstackInfer.add_child(tpInfer)
+tpInfer.set_items(["未知", "下顎", "上顎"]) # 0 1 2
+tpInfer.selected_index = 0
+
 # 另存目前 lobj
 btnSaveAs = TpO3d.Button("Save As")
 vert1.add_child(btnSaveAs)
@@ -184,7 +199,8 @@ vertCollepse3.set_is_open(True)
 
 list3 = TpO3d.ListView()
 vertCollepse3.add_child(list3)
-list3.set_items(AppGlobals.enumFiles())
+
+list3.set_items(["" for _ in range(10)]) # 高度不再忽大忽小
 list3.set_max_visible_items(10)
 
 # list1
@@ -223,15 +239,72 @@ winSettings.os_frame = TpO3d.Rect(win3D.os_frame.x  - winSettings.content_rect.w
                                   , winSettings.content_rect.width, winSettings.content_rect.height)
 
 app.post_to_main_thread(win3D, lambda: win3D.post_redraw()) # 沒有 post_redraw 時，要滑鼠移過去才會顯示
-app.post_to_main_thread(winSettings, lambda: winSettings.post_redraw()) # 沒有 post_redraw 時，要滑鼠移過去才會顯示
+app.post_to_main_thread(winSettings, lambda: (winSettings.post_redraw(),list3.set_items(AppGlobals.enumFiles()))) # 沒有 post_redraw 時，要滑鼠移過去才會顯示
+
 #%% 
 # callback functions 
 from Easy.LabeledObject import LabeledObject
 import os
 
 def fn_clickHelp():
-    winSettings.show_message_box("Help", "選取檔案：雙擊清單。\n滑鼠左鍵，旋轉。\nCtrl+左滑鼠鍵，平移。\n滑鼠滾輪，縮放。\n右滑鼠鍵，設定 label。\nZ，undo。Y，redo。\n")
+    # winSettings.show_message_box("Help", "選取檔案：雙擊清單。\n滑鼠左鍵，旋轉。\nCtrl+左滑鼠鍵，平移。\n滑鼠滾輪，縮放。\n右滑鼠鍵，設定 label。\nZ，undo。Y，redo。\n")
+    winSettings.show_message_box("Help", """選取檔案：雙擊清單。
+                                 滑鼠左鍵，旋轉。
+                                 Ctrl+左滑鼠鍵，平移。
+                                 滑鼠滾輪，縮放。
+                                 滑鼠滾輪+Shift，設定影響半徑。
+                                 滑鼠滾輪+Ctrl，設定 label id。
+                                 滑鼠鍵，設定 label。
+                                 Z，undo。Y，redo。
+                                 
+                                 預測功能，是給 stl 檔案用的。
+                                 """)
 btnHelp.set_on_clicked(fn_clickHelp)
+
+def fn_clickInfer():
+    # 使用文件上傳方式發送POST請求
+    url = 'http://140.123.121.21:443/toothgum_seg-api/infer/lower_tooth/'
+    if tpInfer.selected_index == 2:
+        url = 'http://140.123.121.21:443/toothgum_seg-api/infer/upper_tooth/'
+    with open(AppGlobals.pathlobj, 'rb') as stl_file:
+        files = {'stl_file': stl_file}
+        datas = {'mode': 'lower'}
+        response = requests.post(url, files=files, data=datas)
+    # 檢查響應狀態碼
+    if response.status_code == 200:
+        print('請求成功！')
+    else:
+        print(f'請求失敗，狀態碼：{response.status_code}')
+    print(response.headers)
+    print(response.text[:256])
+    
+    # text 是 x y z label 一行，所以要 parse
+    def text_to_data(text: str)->t.Tuple[npt.NDArray[np.float32], npt.NDArray[np.int8]]:
+        r1 = text.split("\n")
+        pts = np.array( [[float(a2) for a2 in x.split(",")[:3]] for x in r1], dtype=np.float32)
+        labels = np.array( [float(x.split(",")[-1]) for x in r1], dtype=np.int8 )
+        return pts, labels
+    pts, labels = text_to_data(response.text)
+    
+    # 更新目前 mesh 的 labels ， 用 pts 與 labels 。
+    # 建 kdtree & 找最近點。
+    pc = TpO3d.PointCloud()
+    pc.points = TpO3d.Vector3dVector(pts)
+    kdtree = TpO3d.KDTreeFlann(pc)
+    lobj = AppGlobals.lobj
+    idx = np.array([kdtree.search_knn_vector_3d(a1,1)[1][0] for a1 in lobj[0]])
+    labels2 = labels[idx]
+    
+    # 更新 lobj
+    AppGlobals.lobj = (lobj[0], lobj[1], lobj[2], labels2, lobj[4], lobj[5], lobj[6])
+    
+    # 更新 mesh
+    update_labels_and_colors([])
+    
+    # 儲存 lobj
+    
+    
+btnInfer.set_on_clicked(fn_clickInfer)
 
 def enum_and_set_list3():
     """ 產生給  ListView 用的資料 
@@ -263,6 +336,11 @@ def generate_filename(path, dir):
     base_name = os.path.basename(path)  # 從路徑中提取檔名    
     name, ext = os.path.splitext(base_name)  # 分離檔名和副檔名
     
+    # 如果是 .stl 取直接換副檔名，並且取代現有的 .lobj
+    if ext == ".stl":
+        return name + ".lobj"
+    
+    # .lobj 才有針對 fixed 的處理
     if "_fixed_" in name:
         name = name.rsplit("_fixed_", 1)[0]  # 移除最後一個_fixed_字串
         
@@ -279,6 +357,10 @@ def fn_btnSaveAs_clicked():
         dir = os.path.dirname(abs_path)    
         path2 = generate_filename(AppGlobals.pathlobj, dir + '/')
         LabeledObject().saveVsLsTris(dir + '/' + path2, AppGlobals.lobj[0], AppGlobals.lobj[3], AppGlobals.lobj[5])
+        
+        # 若是 stl, 要變更全域變數，下次存，才會是 fixed
+        if path2.endswith(".lobj"):
+            AppGlobals.pathlobj = dir + '/' + path2
         
         reload_and_update_listboxview()
         
@@ -433,7 +515,40 @@ def openLObj(path)->TpO3d.TriangleMesh:
     print("openLObj", path)
     
     app.post_to_main_thread(win3D, lambda: win3D.post_redraw()) # 沒有 post_redraw 時，要滑鼠移過去才會顯示
-
+def openBinarySTL(path)->TpO3d.TriangleMesh:   
+    with open(path,'rb') as fp: 
+        mesh = readStlBinary_ToO3dMesh(fp)
+    
+    lobj = (np.array(mesh.vertices), None, None, None, None, np.array(mesh.triangles), None)
+    AppGlobals.lobj = lobj
+    
+    mesh.compute_adjacency_list()
+    AppGlobals.dict_adjacency = {i: lst for i, lst in enumerate(mesh.adjacency_list)}
+    
+    kdtree = TpO3d.KDTreeFlann(mesh) # 兩種 sample都會用到
+    AppGlobals.kdtree = kdtree
+    AppGlobals.mesh = mesh
+    
+    # 計算，選取時要用的半徑，最大的 1/20
+    r1 = np.max(mesh.vertices, axis=0)
+    r2 = np.min(mesh.vertices, axis=0)
+    AppGlobals.lenMaxMesh = np.max( r1-r2 )
+    radius = AppGlobals.lenMaxMesh * AppGlobals.radius_percent # 約31個點
+    AppGlobals.radius = radius
+    
+    sliderRadius.enabled = True
+    sliderSetValue.enabled = True
+    
+    print("max min radius/40 ", r1, " " , r2 , " " , radius)
+    
+    UnDoReDo.clear_undo_and_redo()
+    
+    scene3d.clear_geometry()
+    scene3d.add_geometry("mesh", mesh, material=TpO3d.MaterialRecord.lazyMaterialRecord())
+    resetCamera()
+    print("openBinarySTL", path)
+    
+    app.post_to_main_thread(win3D, lambda: win3D.post_redraw()) # 沒有 post_redraw 時，要滑鼠移過去才會顯示
 def _listbox_changed_core(str:str, isDclick:bool, path_idds_ver:t.List[t.Tuple[str, int,int]], upperlower:str):
     if isDclick:
         ''' id_140_ver_12 '''
@@ -472,7 +587,22 @@ def fn_list3_selected_changed(newvalue, isdb):
                 print('file')
                 AppGlobals.upper_lower = "other"                
                 AppGlobals.pathlobj = path
-                openLObj(path)
+                # 判斷 副檔名 .stl 或 .lobj
+                if path.endswith('.stl'):
+                    openBinarySTL(path)
+                    
+                    # path 若有 lower 或 upper 字樣，就能判定 tpInfer
+                    # path 要先取得 filename
+                    filename = os.path.basename(path).lower()
+                    if "lower" in filename:
+                        tpInfer.selected_index = 1
+                    elif "upper" in filename:
+                        tpInfer.selected_index = 2
+                    else:
+                        tpInfer.selected_index = 0
+                        
+                elif path.endswith('.lobj'):
+                    openLObj(path)
         
 list1.set_on_selection_changed(fn_listbox_changed1)
 list2.set_on_selection_changed(fn_listbox_changed2)

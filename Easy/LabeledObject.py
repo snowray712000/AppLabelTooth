@@ -12,6 +12,8 @@ from typing import List, Union, Tuple, Optional
 import typing as t
       
 class LabeledObject:
+  """vertexs, normals, colors, vertex_labels, tex2d, triangles, texId
+  """
   _s: LabeledObject = None
   
   def __new__(cls, *args, **kwargs):
