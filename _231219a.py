@@ -1,18 +1,12 @@
 #%%
-import numpy as np
+from Easy import *
+
 import open3d as o3d
-from Easy import TpO3d
-import typing as t
-import numpy.typing as npt
-import linque as lq
-import os
 import glob
-from Easy.readSTL import readStlBinary_ToO3dMesh
 import requests
 
 #%%
 from enumSrcDataLObjSorted import enumSrcDataLObjSorted3
-from Easy.ColorsForCrown import labels_to_colors_crown
 
 path_idds_upper = enumSrcDataLObjSorted3(upperlower="upper")
 path_idds_lower = enumSrcDataLObjSorted3(upperlower="lower")

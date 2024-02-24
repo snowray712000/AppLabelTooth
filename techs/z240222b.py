@@ -2,10 +2,11 @@
 
 
 #%%
+#%%
 from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
 add_parent_dir_to_sys_path()
-from Easy.readSTL import readStlBinary_ToO3dMesh
-from Easy.easyopen3d import easyo3d
+from Easy import *
+
 path = "./../CrownSegmentationNew/1/upper_mod.stl"
 path = "./../庭凱測試結果/測試AI_20231020/case1_lower/Template1-0_lower_Stage1_step0_0629_Nicky.stl"
 with open(path,"rb") as file:

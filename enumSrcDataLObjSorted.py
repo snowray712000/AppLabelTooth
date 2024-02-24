@@ -1,9 +1,7 @@
 # %%
-from Easy.easys import easy
+from Easy import *
 import re
-import typing as t
-import os
-import linque as lq
+from Easy.easys import easy
 
 def enumSrcDataLObjSorted(dirSrc='./../CrownSegmentationNew_SrcDataLObj/', upperlower='lower') -> t.List[str]:    
     r1 = enumSrcDataLObjSorted2(dirSrc, upperlower)

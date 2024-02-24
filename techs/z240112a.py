@@ -4,9 +4,8 @@
 #%%
 from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
 add_parent_dir_to_sys_path()
-import numpy as np
-import numpy.typing as npt
-import Easy.TpO3d as TpO3d
+from Easy import *
+
 def set_nolabel_to_nearest_label(lobj):
     v1: npt.NDArray[np.float32] = lobj[0]
     l1: npt.NDArray[np.int8]  = lobj[3]

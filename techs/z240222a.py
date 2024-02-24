@@ -1,11 +1,11 @@
 # 在 231219 中，要作 Infer 的測試
 
-
-# %%
+#%%
 from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
 add_parent_dir_to_sys_path()
+from Easy import *
+
 import requests
-import numpy as np
 # %%
 # url = 'http://127.0.0.1:5000/infer/lower'
 url = 'http://127.0.0.1:5000/infer/lower/test_stl_upload/'
