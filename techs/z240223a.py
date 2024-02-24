@@ -1,9 +1,10 @@
 '''
 231219 中當 Infer 後，也將 text 轉為 numpy，有 vertex, 有 labels 了
 將現有的 mesh (從 stl 來的)，加入 labels 顏色
-
-
 '''
+
+from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
+add_parent_dir_to_sys_path()
 
 path = './../Crown_Result/re_240103a_lower_40.lobj'
 from Easy.LabeledObject import LabeledObject

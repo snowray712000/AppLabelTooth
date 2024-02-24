@@ -1,5 +1,9 @@
 # 231219 中，讀 stl 後，要轉成 mesh 用的。
+
+
 #%%
+from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
+add_parent_dir_to_sys_path()
 from Easy.readSTL import readStlBinary_ToO3dMesh
 from Easy.easyopen3d import easyo3d
 path = "./../CrownSegmentationNew/1/upper_mod.stl"

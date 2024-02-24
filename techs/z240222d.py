@@ -1,4 +1,8 @@
 # 確認資料用 STL 
+
+from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
+add_parent_dir_to_sys_path()
+
 from Easy.readSTL import readStlBinary_ToO3dMesh
 from Easy.easyopen3d import easyo3d
 import Easy.TpO3d as TpO3d

@@ -1,4 +1,8 @@
 # 231219 中，取得 infer result 後的處理
+
+from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
+add_parent_dir_to_sys_path()
+
 import linque as lq
 import numpy as np
 text = """1.2,1.3,1.2,0.0

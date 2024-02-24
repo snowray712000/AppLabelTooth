@@ -2,6 +2,8 @@
 將 231219 主程式，加入這個功能前，先以小程式來測試，確認後再加入。
 '''
 #%%
+from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
+add_parent_dir_to_sys_path()
 import numpy as np
 import numpy.typing as npt
 import Easy.TpO3d as TpO3d
