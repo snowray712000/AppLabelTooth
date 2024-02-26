@@ -1,8 +1,9 @@
 """ 研究 Python 的 import 機制, Import Parent Dir """
 
 #%%
-from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
-add_parent_dir_to_sys_path()
+#%%
+from add_parent_dir_to_sys_path import *
+set_cwd_and_add_parent_dir_to_sys_path_callme_initially()
 from Easy import *
 
 # 測試 

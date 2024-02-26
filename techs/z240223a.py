@@ -3,8 +3,8 @@
 將現有的 mesh (從 stl 來的)，加入 labels 顏色
 '''
 #%%
-from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
-add_parent_dir_to_sys_path()
+from add_parent_dir_to_sys_path import *
+set_cwd_and_add_parent_dir_to_sys_path_callme_initially()
 from Easy import *
 
 

@@ -2,9 +2,8 @@
 
 
 #%%
-#%%
-from add_parent_dir_to_sys_path import add_parent_dir_to_sys_path
-add_parent_dir_to_sys_path()
+from add_parent_dir_to_sys_path import *
+set_cwd_and_add_parent_dir_to_sys_path_callme_initially()
 from Easy import *
 
 path = "./../CrownSegmentationNew/1/upper_mod.stl"
