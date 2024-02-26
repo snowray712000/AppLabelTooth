@@ -5,18 +5,10 @@ import open3d as o3d
 import glob
 import requests
 
-#%%
-from enumSrcDataLObjSorted import enumSrcDataLObjSorted3
-
-path_idds_upper = enumSrcDataLObjSorted3(upperlower="upper")
-path_idds_lower = enumSrcDataLObjSorted3(upperlower="lower")
-
 #%% GlobalValue
 class AppGlobals:
     pathlobj: str
     '''開啟的 pathlobj '''
-    upper_lower: str
-    '''開啟的 pathlobj ，是 upper 還是 lower ， 還是 other '''
     idd: int
     ver: int
     '''開啟的 id '''
@@ -187,35 +179,11 @@ for i in range(17):
         hstack2.add_child(btnColorLabels[i])    
 
 # list3
-vertCollepse3 = TpO3d.CollapsableVert("other", 0, TpO3d.Margins.lazyMarginsEM(winSettings,0.5,0,0.5,0))
-vert1.add_child(vertCollepse3)
-vertCollepse3.set_is_open(True)
 
-list3 = TpO3d.ListView()
-vertCollepse3.add_child(list3)
-
-list3.set_items(["" for _ in range(10)]) # 高度不再忽大忽小
-list3.set_max_visible_items(10)
-
-# list1
-vertCollepse1 = TpO3d.CollapsableVert("upper", 0, TpO3d.Margins.lazyMarginsEM(winSettings,0.5,0,0.5,0))
-vert1.add_child(vertCollepse1)
-vertCollepse1.set_is_open(False)
-
-list1 = TpO3d.ListView()
-vertCollepse1.add_child(list1)
-list1.set_max_visible_items(10)
-list1.set_items([f"id_{str(a1[1])}_ver_{str(a1[2])}" for a1 in path_idds_upper])
-
-# list2
-vertCollepse2 = TpO3d.CollapsableVert("lower", 0, TpO3d.Margins.lazyMarginsEM(winSettings,0.5,0,0.5,0))
-vert1.add_child(vertCollepse2)
-vertCollepse2.set_is_open(False)
-
-list2 = TpO3d.ListView()
-vertCollepse2.add_child(list2)
-list2.set_items([f"id_{str(a1[1])}_ver_{str(a1[2])}" for a1 in path_idds_lower])
-list2.set_max_visible_items(10)
+listFiles = TpO3d.ListView()
+vert1.add_child(listFiles)
+listFiles.set_items(["" for _ in range(10)]) # 高度不再忽大忽小 (但最小化時，再放大會重算一次)
+listFiles.set_max_visible_items(10)
 
 # win3D
 win3D = app.create_window("3D", 768, 768)
@@ -233,7 +201,7 @@ winSettings.os_frame = TpO3d.Rect(win3D.os_frame.x  - winSettings.content_rect.w
                                   , winSettings.content_rect.width, winSettings.content_rect.height)
 
 app.post_to_main_thread(win3D, lambda: win3D.post_redraw()) # 沒有 post_redraw 時，要滑鼠移過去才會顯示
-app.post_to_main_thread(winSettings, lambda: (winSettings.post_redraw(),list3.set_items(AppGlobals.enumFiles()))) # 沒有 post_redraw 時，要滑鼠移過去才會顯示
+app.post_to_main_thread(winSettings, lambda: (winSettings.post_redraw(),listFiles.set_items(AppGlobals.enumFiles()))) # 沒有 post_redraw 時，要滑鼠移過去才會顯示
 
 #%% 
 # callback functions 
@@ -395,31 +363,21 @@ def fn_clickInfer():
     
 btnInfer.set_on_clicked(fn_clickInfer)
 
-def enum_and_set_list3():
+def enum_and_set_listFiles():
     """ 產生給  ListView 用的資料 
     - 使用 AppGlobals.dirFileDialog 路徑資料。
     """
-    list3.set_items(AppGlobals.enumFiles())
+    listFiles.set_items(AppGlobals.enumFiles())
     
 def reload_and_update_listboxview():
-    global path_idds_upper, path_idds_lower
-    if AppGlobals.upper_lower == "upper":
-        path_idds_upper = enumSrcDataLObjSorted3(upperlower="upper")
-        list1.set_items([f"id_{str(a1[1])}_ver_{str(a1[2])}" for a1 in path_idds_upper])
-        list1.selected_index = next((i for i, x in enumerate(path_idds_upper) if x[1] == AppGlobals.idd and x[2] == AppGlobals.ver), None)        
-    elif AppGlobals.upper_lower == "lower":
-        path_idds_lower = enumSrcDataLObjSorted3(upperlower="lower")
-        list2.set_items([f"id_{str(a1[1])}_ver_{str(a1[2])}" for a1 in path_idds_lower])    
-        list2.selected_index = next((i for i, x in enumerate(path_idds_lower) if x[1] == AppGlobals.idd and x[2] == AppGlobals.ver), None)
-    elif AppGlobals.upper_lower == "other":
-        basename = os.path.basename(AppGlobals.pathlobj)
-        names = AppGlobals.enumFiles()
-        list3.set_items(names)
-        
-        def fn_first1(a1: t.Tuple[int,str]):
-            return a1 == basename
-        re: t.Tuple[int,str] = lq.linque( enumerate(names) ).first(fn_first1)
-        list3.selected_index = re[0]
+    basename = os.path.basename(AppGlobals.pathlobj)
+    names = AppGlobals.enumFiles()
+    listFiles.set_items(names)
+    
+    def fn_first1(a1: t.Tuple[int,str]):
+        return a1 == basename
+    re: t.Tuple[int,str] = lq.linque( enumerate(names) ).first(fn_first1)
+    listFiles.selected_index = re[0]
     
 def generate_filename(path, dir):
     base_name = os.path.basename(path)  # 從路徑中提取檔名    
@@ -654,22 +612,16 @@ def _listbox_changed_core(str:str, isDclick:bool, path_idds_ver:t.List[t.Tuple[s
                 openLObj(path)
                 return
 
-def fn_listbox_changed1(str:str, isDclick:bool):
-    _listbox_changed_core(str, isDclick, path_idds_upper, "upper")
-    
-def fn_listbox_changed2(str:str, isDclick):
-    _listbox_changed_core(str, isDclick, path_idds_lower, "lower")
-
-def fn_list3_selected_changed(newvalue, isdb):
+def fn_listFiles_selected_changed(newvalue, isdb):
     if isdb:
         if newvalue == '..':
             AppGlobals.dirFileDialog = os.path.dirname(AppGlobals.dirFileDialog)
-            enum_and_set_list3()
+            enum_and_set_listFiles()
         else:
             path = AppGlobals.dirFileDialog + '/' + newvalue
             if os.path.isdir(path):
                 AppGlobals.dirFileDialog = path
-                enum_and_set_list3()
+                enum_and_set_listFiles()
             else:
                 print('file')
                 AppGlobals.upper_lower = "other"                
@@ -690,9 +642,7 @@ def fn_list3_selected_changed(newvalue, isdb):
                 else:
                     tpInfer.selected_index = 0
         
-list1.set_on_selection_changed(fn_listbox_changed1)
-list2.set_on_selection_changed(fn_listbox_changed2)
-list3.set_on_selection_changed(fn_list3_selected_changed)    
+listFiles.set_on_selection_changed(fn_listFiles_selected_changed)    
 
 
 def get_adjacencys(idxSeed: int, count_recursive: int, dict_adjacency: t.Dict[int, t.List[int]], already_search = None) -> t.List[int]:
