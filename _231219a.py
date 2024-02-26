@@ -255,19 +255,105 @@ def fn_clickHelp():
                                  """)
 btnHelp.set_on_clicked(fn_clickHelp)
 
+def filter_before_infer()->t.Optional[npt.NDArray[np.int32]]:
+    """ 回傳 null 表示不用過濾，用所有的 """
+    # 確認 upperlower, 從 tpInfer
+    assert( tpInfer.selected_index != 0 )
+    
+    upperlower = "lower"
+    if tpInfer.selected_index == 2:
+        upperlower = "upper"
+    
+    # 
+    mesh = AppGlobals.mesh
+    lobj = AppGlobals.lobj
+    points = lobj[0]
+    z = points[:, 2]
+    zmin = np.min(z)
+    zmax = np.max(z)
+    height = zmax - zmin
+    
+    # 確認是否有底
+    def isHasBottom():
+        if upperlower == 'lower':
+            return np.sum( z == zmin ) > 50 # 通常 200 個以上 
+        else:
+            return np.sum( z == zmax ) > 50
+    if isHasBottom() == False:
+        return None
+    
+    # 相鄰資訊
+    mesh.compute_adjacency_list()
+    dict_adjacency = {i: lst for i, lst in enumerate(mesh.adjacency_list)}
+    # 最大的法向量變化值
+    def calc_dots_min():
+        """7萬多當，約4秒"""
+        min_dots: t.List[float] = []
+        for i in range(len(points)):
+            # 取得相鄰頂點的法向量
+            normals = np.array([mesh.vertex_normals[i] for i in dict_adjacency[i]])
+            # 計算 dot
+            dots = np.dot(normals, mesh.vertex_normals[i])
+            
+            # 取得最小的
+            min_dot = np.min(dots)
+            min_dots.append(min_dot)
+        return min_dots
+    dots_min = calc_dots_min()
+    
+    # dot < 0.95，並且取得 z 的 avg std
+    idxsA = np.array(dots_min) < 0.95
+    points2 = points[idxsA]
+    
+    # z 不可取接近底部的
+    z2 = points2[:, 2]
+    if upperlower == 'upper':
+        idxsB = z2 < (zmax - 0.1 * height)
+    else:
+        idxsB = z2 > (zmin + 0.1 * height)
+    # 計算 z 的 avg std
+    z3 = points2[idxsB, 2] # 去除掉接近底部的
+    avg, std = np.mean(z3), np.std(z3)
+    
+    # 依 avg std，取得 idxs， avg + 3 std
+    if upperlower == 'upper':
+        idxs = points[:, 2] < avg + 3 * std
+    else:
+        idxs = points[:, 2] > avg - 3 * std
+    return idxs
+    
 def fn_clickInfer():
     # try except
     try:
+        # 檢查 tpInfer
+        assert ( AppGlobals.mesh != None and AppGlobals.lobj != None )
+        if tpInfer.selected_index == 0:
+            winSettings.show_message_box("中斷", "檔名沒有upper 或 lower 字眼，請手動選擇上顎或下顎。")
+            return
         # popup 訊息
-        winSettings.show_message_box("預測", "大約需要 10 秒，請耐心等待，按下確定後開始。")
+        # winSettings.show_message_box("預測", "大約需要 10 秒，請耐心等待，按下確定後開始。")，沒用，這是最後才跳出來
+        
         # 使用文件上傳方式發送POST請求
-        url = 'http://140.123.121.21:443/toothgum_seg-api/infer/lower_tooth/'
+        url = 'http://140.123.121.21:443/toothgum_seg-api/infer/lower_tooth/point_cloud/'
         if tpInfer.selected_index == 2:
-            url = 'http://140.123.121.21:443/toothgum_seg-api/infer/upper_tooth/'
-        with open(AppGlobals.pathlobj, 'rb') as stl_file:
-            files = {'stl_file': stl_file}
-            datas = {'mode': 'lower'}
+            url = 'http://140.123.121.21:443/toothgum_seg-api/infer/upper_tooth/point_cloud/'
+        def inferAndreturnResponse():
+            mesh = AppGlobals.mesh
+            lobj = AppGlobals.lobj
+            idxsFilter = filter_before_infer()
+            if idxsFilter is None:
+                vertexs = lobj[0]
+                normals = np.array( mesh.vertex_normals, dtype=np.float32 )
+            else:
+                vertexs = np.array( lobj[0][idxsFilter] , dtype=np.float32 )
+                normals = np.array( np.array(mesh.vertex_normals)[idxsFilter], dtype=np.float32 )
+            xyznnnUpload = np.hstack([vertexs,normals]) # pc upload 測試用
+            files = {'stl_file': xyznnnUpload.tobytes()}
+            datas = {'mode': 'lower'} # 其實沒用到
             response = requests.post(url, files=files, data=datas)
+            return response
+        response = inferAndreturnResponse()
+        
         # 檢查響應狀態碼
         if response.status_code == 200:
             print('請求成功！')
@@ -574,8 +660,6 @@ def fn_listbox_changed1(str:str, isDclick:bool):
 def fn_listbox_changed2(str:str, isDclick):
     _listbox_changed_core(str, isDclick, path_idds_lower, "lower")
 
-
-    
 def fn_list3_selected_changed(newvalue, isdb):
     if isdb:
         if newvalue == '..':
@@ -593,19 +677,18 @@ def fn_list3_selected_changed(newvalue, isdb):
                 # 判斷 副檔名 .stl 或 .lobj
                 if path.endswith('.stl'):
                     openBinarySTL(path)
-                    
-                    # path 若有 lower 或 upper 字樣，就能判定 tpInfer
-                    # path 要先取得 filename
-                    filename = os.path.basename(path).lower()
-                    if "lower" in filename:
-                        tpInfer.selected_index = 1
-                    elif "upper" in filename:
-                        tpInfer.selected_index = 2
-                    else:
-                        tpInfer.selected_index = 0
-                        
                 elif path.endswith('.lobj'):
                     openLObj(path)
+                    
+                # path 若有 lower 或 upper 字樣，就能判定 tpInfer
+                # path 要先取得 filename
+                filename = os.path.basename(path).lower()
+                if "lower" in filename:
+                    tpInfer.selected_index = 1
+                elif "upper" in filename:
+                    tpInfer.selected_index = 2
+                else:
+                    tpInfer.selected_index = 0
         
 list1.set_on_selection_changed(fn_listbox_changed1)
 list2.set_on_selection_changed(fn_listbox_changed2)

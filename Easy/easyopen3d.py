@@ -262,10 +262,13 @@ class easyo3d:
         _render(obj)
 
     def toMesh(vertexs, triangles, labels=None, isDoSop=True) -> TpO3d.TriangleMesh:
+        """ 轉為 triangles mesh 。 SOP: 除去重複點，計算頂點、平面法向量。若含 labels 則會上色 """
         return _toMesh(vertexs, triangles, labels, isDoSop=isDoSop)
 
     def toMesh2(lobj: LabeledObject, isDoSop=True) ->TpO3d.TriangleMesh:
-        """ toMesh(lobj[0], lobj[5], lobj[3] ... """
+        """ toMesh(lobj[0], lobj[5], lobj[3] ... 
+        轉為 triangles mesh 。 SOP: 除去重複點，計算頂點、平面法向量。若含 labels 則會上色
+        """
         return _toMesh(lobj[0], lobj[5], lobj[3], isDoSop=isDoSop)
     
     def toPointCloud(vertexs, normals, colors = None)->o3d.geometry.PointCloud:
