@@ -209,21 +209,20 @@ from Easy.LabeledObject import LabeledObject
 import os
 
 def fn_clickHelp():
-    # winSettings.show_message_box("Help", "選取檔案：雙擊清單。\n滑鼠左鍵，旋轉。\nCtrl+左滑鼠鍵，平移。\n滑鼠滾輪，縮放。\n右滑鼠鍵，設定 label。\nZ，undo。Y，redo。\n")
     winSettings.show_message_box("Help", """選取檔案：雙擊清單。
                                  滑鼠左鍵，旋轉。
                                  Ctrl+左滑鼠鍵，平移。
+                                 滑鼠右鍵，設定 label。
                                  滑鼠滾輪，縮放。
                                  滑鼠滾輪+Shift，設定影響半徑。
                                  滑鼠滾輪+Ctrl，設定 label id。
-                                 滑鼠鍵，設定 label。
                                  Z，undo。Y，redo。
                                  
                                  預測功能，是給 stl 檔案用的。
                                  """)
 btnHelp.set_on_clicked(fn_clickHelp)
 
-def filter_before_infer()->t.Optional[npt.NDArray[np.int32]]:
+def filter_before_infer()->t.Optional[npt.NDArray[np.bool8]]:
     """ 回傳 null 表示不用過濾，用所有的 """
     # 確認 upperlower, 從 tpInfer
     assert( tpInfer.selected_index != 0 )
@@ -236,59 +235,66 @@ def filter_before_infer()->t.Optional[npt.NDArray[np.int32]]:
     mesh = AppGlobals.mesh
     lobj = AppGlobals.lobj
     points = lobj[0]
-    z = points[:, 2]
-    zmin = np.min(z)
-    zmax = np.max(z)
-    height = zmax - zmin
+    normals = np.array(mesh.vertex_normals)
+    z = points[:, 2] # 加效率
+    zlimit = np.min(z) if upperlower == 'lower' else np.max(z)
     
     # 確認是否有底
     def isHasBottom():
-        if upperlower == 'lower':
-            return np.sum( z == zmin ) > 50 # 通常 200 個以上 
-        else:
-            return np.sum( z == zmax ) > 50
+        count = np.sum( z == zlimit )
+        return count > 20 # 通常 200 個以上
+    
     if isHasBottom() == False:
         return None
     
-    # 相鄰資訊
-    mesh.compute_adjacency_list()
-    dict_adjacency = {i: lst for i, lst in enumerate(mesh.adjacency_list)}
-    # 最大的法向量變化值
-    def calc_dots_min():
-        """7萬多當，約4秒"""
-        min_dots: t.List[float] = []
-        for i in range(len(points)):
-            # 取得相鄰頂點的法向量
-            normals = np.array([mesh.vertex_normals[i] for i in dict_adjacency[i]])
-            # 計算 dot
-            dots = np.dot(normals, mesh.vertex_normals[i])
-            
-            # 取得最小的
-            min_dot = np.min(dots)
-            min_dots.append(min_dot)
-        return min_dots
-    dots_min = calc_dots_min()
+    def get_idx_of_vertex_for_calc_avg_std_z(lobj, upperlower, mesh:TpO3d.TriangleMesh):
+        assert ( mesh.has_vertex_normals() )
+        
+        # 建相鄰，約1秒
+        if mesh.has_adjacency_list() == False:
+            mesh.compute_adjacency_list() 
+        dict_adjacency = {i: lst for i, lst in enumerate(mesh.adjacency_list)}
+        
+        # 外部也有，因此共用下3行
+        ## 2個算法，共用資料(提升效率，只作一次)
+        # z = lobj[0][:, 2] 
+        # normals = np.array(mesh.vertex_normals)
+       
+        # 外部也有，因此共用下1行
+        # zlimit = np.min(z) if upperlower == 'lower' else np.max(z)
+        
+        def get_exclude_bottom_idx():
+            idxs = z == zlimit
+            idxs1 = np.arange(len(z))[idxs] # [T T F F T] -> [0 1 4]
+            idxs2 = lq.linq(idxs1).select_many(lambda x: dict_adjacency[x]).distinct().to_list()
+            idxs13 = lq.linq(idxs2).select_many(lambda x: dict_adjacency[x]).distinct().to_list()
+            idxs123 = list(set(idxs13 + idxs2))
+            re = np.full(len(z), True)
+            re[idxs123] = False
+            return re
+        def get_normal_change_big_idx():
+            min_dots: t.List[float] = []
+            for i in range(len(lobj[0])):
+                # 取得相鄰頂點的法向量
+                normals2 = np.array([normals[i] for i in dict_adjacency[i]])
+                # 計算 dot
+                dots = np.dot(normals2, normals[i])
+                # 取得最小的
+                min_dot = np.min(dots)
+                min_dots.append(min_dot)
+            re = np.array(min_dots) < 0.95
+            return re
+        
+        return get_exclude_bottom_idx() & get_normal_change_big_idx()        
     
-    # dot < 0.95，並且取得 z 的 avg std
-    idxsA = np.array(dots_min) < 0.95
-    points2 = points[idxsA]
+    # 計算 std avg
+    idxs = get_idx_of_vertex_for_calc_avg_std_z(lobj, upperlower, mesh)
+    z2 = z[idxs]
+    avg, std = np.mean(z2), np.std(z2)
     
-    # z 不可取接近底部的
-    z2 = points2[:, 2]
-    if upperlower == 'upper':
-        idxsB = z2 < (zmax - 0.1 * height)
-    else:
-        idxsB = z2 > (zmin + 0.1 * height)
-    # 計算 z 的 avg std
-    z3 = points2[idxsB, 2] # 去除掉接近底部的
-    avg, std = np.mean(z3), np.std(z3)
-    
-    # 依 avg std，取得 idxs， avg + 3 std
-    if upperlower == 'upper':
-        idxs = points[:, 2] < avg + 3 * std
-    else:
-        idxs = points[:, 2] > avg - 3 * std
-    return idxs
+    # filter
+    idxsExcludeOutlier = z > (avg - 3 * std) if upperlower == 'lower' else z < (avg + 3 * std)
+    return idxsExcludeOutlier
     
 def fn_clickInfer():
     # try except
