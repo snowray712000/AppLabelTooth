@@ -395,6 +395,7 @@ def fn_labelUsePtsFile():
             
             # 更新 mesh
             update_labels_and_colors([])
+            
 
 
 btnUsePtsFileLabel.set_on_clicked(fn_labelUsePtsFile)
@@ -528,7 +529,8 @@ def update_labels_and_colors(idxs):
         AppGlobals.lobj[3][idxs2] = AppGlobals.setValue
     AppGlobals.mesh.vertex_colors = TpO3d.Vector3dVector(labels_to_colors_crown(AppGlobals.lobj[3]))    
     scene3d.clear_geometry()
-    scene3d.add_geometry("mesh", AppGlobals.mesh, material=TpO3d.MaterialRecord.lazyMaterialRecord())    
+    scene3d.add_geometry("mesh", AppGlobals.mesh, material=TpO3d.MaterialRecord.lazyMaterialRecord())   
+    app.post_to_main_thread(win3D, lambda: win3D.post_redraw()) 
         
 def resetCamera():
     scene.setup_camera(60, AppGlobals.mesh.get_axis_aligned_bounding_box(), [0, 0, 0])
