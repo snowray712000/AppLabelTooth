@@ -121,6 +121,10 @@ hstackInfer.add_child(tpInfer)
 tpInfer.set_items(["未知", "下顎", "上顎"]) # 0 1 2
 tpInfer.selected_index = 0
 
+# 使用 .pts
+btnUsePtsFileLabel = TpO3d.Button("使用.pts")
+hstackInfer.add_child(btnUsePtsFileLabel)
+
 # 另存目前 lobj
 btnSaveAs = TpO3d.Button("Save As")
 vert1.add_child(btnSaveAs)
@@ -359,10 +363,41 @@ def fn_clickInfer():
     # 更新 mesh
     update_labels_and_colors([])
     
-    # 儲存 lobj
-    
     
 btnInfer.set_on_clicked(fn_clickInfer)
+
+def fn_labelUsePtsFile():
+    path = AppGlobals.pathlobj
+    
+    # 替換副檔名 .stl -> .pts
+    pathPts = os.path.splitext(path)[0] + ".pts"
+    
+    # 確認檔案存在嗎
+    if os.path.exists(pathPts) == False:
+        # 檔案不存在, msgbox
+        winSettings.show_message_box("Error", f"{pathPts} 不存在。")
+    else:
+        with open(pathPts, 'r') as f:
+            lines = f.readlines()
+            
+            # , 隔開, x,y,z,label
+            xyzs = np.array( [[float(a2) for a2 in a1.split(",")[:3]] for a1 in lines] )
+            labels = np.array( [float(a1.split(",")[-1]) for a1 in lines] , dtype=np.int8 )
+            
+            labels[labels == -1] = 0
+            
+            lobj = AppGlobals.lobj
+            labelsResult = search_label_from_nearest(xyzs, labels, lobj[0], None)
+            
+            lobj = (lobj[0], None, None, labelsResult, None, lobj[5], None)
+            AppGlobals.lobj = lobj
+            AppGlobals.mesh.vertex_colors = TpO3d.Vector3dVector(labels_to_colors_crown(lobj[3]))
+            
+            # 更新 mesh
+            update_labels_and_colors([])
+
+
+btnUsePtsFileLabel.set_on_clicked(fn_labelUsePtsFile)
 
 def enum_and_set_listFiles():
     """ 產生給  ListView 用的資料 
