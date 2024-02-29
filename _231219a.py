@@ -1,6 +1,6 @@
 #%%
 from Easy import *
-
+from Easy.search_label_from_nearest import search_label_from_nearest
 import open3d as o3d
 import glob
 import requests
@@ -349,14 +349,9 @@ def fn_clickInfer():
         return pts, labels
     pts, labels = text_to_data(response.text)
     
-    # 更新目前 mesh 的 labels ， 用 pts 與 labels 。
-    # 建 kdtree & 找最近點。
-    pc = TpO3d.PointCloud()
-    pc.points = TpO3d.Vector3dVector(pts)
-    kdtree = TpO3d.KDTreeFlann(pc)
+    # 更新目前 mesh 的 labels ， 用 pts 與 labels  建 kdtree & 找最近點。
     lobj = AppGlobals.lobj
-    idx = np.array([kdtree.search_knn_vector_3d(a1,1)[1][0] for a1 in lobj[0]])
-    labels2 = labels[idx]
+    labels2 = search_label_from_nearest(pts,labels, lobj[0], 1.0)
     
     # 更新 lobj
     AppGlobals.lobj = (lobj[0], lobj[1], lobj[2], labels2, lobj[4], lobj[5], lobj[6])
