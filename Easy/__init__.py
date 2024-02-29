@@ -7,7 +7,7 @@ import linque as lq
 
 import Easy.TpO3d as TpO3d
 from Easy.easyopen3d import easyo3d
-from Easy.LabeledObject import LabeledObject
+from Easy.LabeledObject import LabeledObject, toLobjTupleVTL
 from Easy.readSTL import readStlBinary_ToO3dMesh
 from Easy.ColorsForCrown import labels_to_colors_crown
 

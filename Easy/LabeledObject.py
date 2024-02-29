@@ -10,7 +10,11 @@ import numpy as np
 import numpy.typing as npt
 from typing import List, Union, Tuple, Optional
 import typing as t
-      
+
+def toLobjTupleVTL(vertices, triangles, labels=None):
+    """ 太常用了，所以寫成函數 V:vertices, T:triangles, L:labels """
+    return (vertices, None, None, labels, None, triangles, None)
+
 class LabeledObject:
   """vertexs, normals, colors, vertex_labels, tex2d, triangles, texId
   """
