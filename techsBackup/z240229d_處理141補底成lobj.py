@@ -52,9 +52,8 @@ stlInfos2 = lq.linq(stlInfos).where(fnIsCorrect).to_list()
 
 #%
 # 取得 ground truth of 141
-from enumSrcDataLObjSorted import enumSrcDataLObjSorted4
-groundTruthInfos = enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj',upperlower='upper', isOnlyLastVersion=True)
-groundTruthInfos.extend(enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj',upperlower='lower', isOnlyLastVersion=True))
+from Easy.enumSrcDataLObjSorted import enumSrcDataLObjSorted4
+groundTruthInfos = enumSrcDataLObjSorted4()
 
 #%
 # 試作其中一個

@@ -7,12 +7,8 @@ set_cwd_and_add_parent_dir_to_sys_path_callme_initially()
 from Easy import *
 
 # 列舉 141 筆資料
-from enumSrcDataLObjSorted import enumSrcDataLObjSorted4
-infos = enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj',
-                            upperlower='lower',
-                            isOnlyLastVersion=True)
-r1b = enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj',upperlower='upper',isOnlyLastVersion=True)
-# infos.extend(r1b)
+from Easy.enumSrcDataLObjSorted import enumSrcDataLObjSorted4
+infos = enumSrcDataLObjSorted4()
 
 #%%
 # 前處理其中一筆作測試

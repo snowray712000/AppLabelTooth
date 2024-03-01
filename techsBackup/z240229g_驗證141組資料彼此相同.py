@@ -4,9 +4,9 @@ set_cwd_and_add_parent_dir_to_sys_path_callme_initially()
 from Easy import *
 
 #%%
-from enumSrcDataLObjSorted import enumSrcDataLObjSorted4
+from Easy.enumSrcDataLObjSorted import enumSrcDataLObjSorted4
 
-infos = enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj', upperlower= 'lower', isOnlyLastVersion= True)
+infos = enumSrcDataLObjSorted4(upperlower= 'lower')
 
 #%%
 infos2 = lq.linq(infos).where(lambda x: x[1] < 141).to_list()

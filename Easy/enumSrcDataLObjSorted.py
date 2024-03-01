@@ -1,14 +1,19 @@
 # %%
+if __name__ == "__main__":
+    from add_parent_dir_to_sys_path import set_cwd_and_add_parent_dir_to_sys_path_callme_initially
+    set_cwd_and_add_parent_dir_to_sys_path_callme_initially()    
 from Easy import *
-import re
-from Easy.easys import easy
 
-def enumSrcDataLObjSorted(dirSrc='./../CrownSegmentationNew_SrcDataLObj/', upperlower='lower') -> t.List[str]:    
+#%
+from Easy.easys import easy
+import re
+
+def enumSrcDataLObjSorted(dirSrc='./../../CrownSegmentationNew_SrcDataLObj/', upperlower='lower') -> t.List[str]:    
     r1 = enumSrcDataLObjSorted2(dirSrc, upperlower)
     return [a1[0] for a1 in r1]
 
 
-def enumSrcDataLObjSorted2(dirSrc='./../CrownSegmentationNew_SrcDataLObj/', upperlower='lower') -> t.List[t.Tuple[str, int]]:
+def enumSrcDataLObjSorted2(dirSrc='./../../CrownSegmentationNew_SrcDataLObj/', upperlower='lower') -> t.List[t.Tuple[str, int]]:
     lobjs = easy.io.enumFiles(f'{dirSrc}./*_{upperlower}.lobj')
 
     def parsingIdObj(pathLobj) -> int:
@@ -23,7 +28,7 @@ def enumSrcDataLObjSorted2(dirSrc='./../CrownSegmentationNew_SrcDataLObj/', uppe
     r1 = [[a1, parsingIdObj(a1)] for a1 in lobjs]
     return sorted(r1, key=lambda x: x[1])
 
-def enumSrcDataLObjSorted3(dirSrc='./../CrownSegmentationNew_SrcDataLObj/', upperlower='lower') -> t.List[t.Tuple[str, int,int]]:
+def enumSrcDataLObjSorted3(dirSrc='./../../CrownSegmentationNew_SrcDataLObj/', upperlower='lower') -> t.List[t.Tuple[str, int,int]]:
     """ lobj 檔，開始有手動修正的版本，所以，要用這個函數
 
     Args:
@@ -80,8 +85,9 @@ def parse_path_to_id_version_upperlower(pathLobj: str) -> t.Tuple[str, int, int,
     
     return pathLobj, idobj, version, upperlower
     
-def enumSrcDataLObjSorted4(dirSrc='./../CrownSegmentationNew_SrcDataLObj/', upperlower: t.Optional[t.Literal['lower','upper']] = 'lower', isOnlyLastVersion: bool = False) -> t.List[t.Tuple[str, int, int, t.Literal['lower','upper','unknown']]]:
+def enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj/', upperlower: t.Optional[t.Literal['lower','upper']] = None, isOnlyLastVersion: bool = True) -> t.List[t.Tuple[str, int, int, t.Literal['lower','upper','unknown']]]:
     """ 141組以外的資料，命名規則很不一樣了，不再只有 idobj 與 lower 與 fixed 字眼了。
+    - upperlower: None 表示不分 upperlower
 
     ### Returns:
     - path, id, version, upperlower

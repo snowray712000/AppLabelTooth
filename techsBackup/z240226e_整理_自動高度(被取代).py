@@ -10,10 +10,9 @@ from Easy import *
 
 #%
 # 取得所有 lobj info
-from enumSrcDataLObjSorted import enumSrcDataLObjSorted4
+from Easy.enumSrcDataLObjSorted import enumSrcDataLObjSorted4
 
-lobjinfos = enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj',upperlower='upper', isOnlyLastVersion=True)
-lobjinfos.extend(enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj',upperlower='lower', isOnlyLastVersion=True))
+lobjinfos = enumSrcDataLObjSorted4()
 
 #%%
 # 實驗其中一個

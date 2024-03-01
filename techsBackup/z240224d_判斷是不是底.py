@@ -8,12 +8,8 @@ from Easy import *
 
 #%%
 # 列舉 141 筆資料
-from enumSrcDataLObjSorted import enumSrcDataLObjSorted4
-r1 = enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj',
-                            upperlower='lower',
-                            isOnlyLastVersion=True)
-r1b = enumSrcDataLObjSorted4(dirSrc='./../../CrownSegmentationNew_SrcDataLObj',upperlower='upper',isOnlyLastVersion=True)
-r1.extend(r1b)
+from Easy.enumSrcDataLObjSorted import enumSrcDataLObjSorted4
+r1 = enumSrcDataLObjSorted4()
 print(r1)
 
 #%%
