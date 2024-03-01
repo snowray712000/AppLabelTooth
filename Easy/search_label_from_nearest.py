@@ -1,9 +1,8 @@
-#%%
-import typing as t
-import numpy as np
-import numpy.typing as npt
-import linque as lq
-from . import TpO3d
+# %%
+if __name__ == "__main__":
+    from add_parent_dir_to_sys_path import set_cwd_and_add_parent_dir_to_sys_path_callme_initially
+    set_cwd_and_add_parent_dir_to_sys_path_callme_initially()    
+from Easy import *
 
 def search_label_from_nearest(ptsLabel: npt.NDArray[np.float32], labels: npt.NDArray[np.int8], pts: npt.NDArray[np.float32], distanceLimit: t.Optional[float] = None)->npt.NDArray[np.int8]:
     """ 從 1 個現有的 point cloud with label 作參考，找出 pts 的 label 流程，漸漸常被使用，所以重構一下

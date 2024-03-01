@@ -1,9 +1,8 @@
 #%%
-import typing as t
-import numpy as np
-import numpy.typing as npt
-import linque as lq
-from . import TpO3d
+if __name__ == "__main__":
+    from add_parent_dir_to_sys_path import set_cwd_and_add_parent_dir_to_sys_path_callme_initially
+    set_cwd_and_add_parent_dir_to_sys_path_callme_initially()    
+from Easy import *
 
 class FilterOfOutlier:
     """ 使用法向量變化大，作為牙齒的初步判斷，再依牙的高度，取合適的高度
