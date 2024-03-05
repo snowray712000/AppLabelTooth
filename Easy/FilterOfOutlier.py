@@ -72,9 +72,13 @@ class FilterOfOutlier:
 
             # triangles2 is shape(N,3) int32, 將所有頂點 index 集合起來
             index3 = np.unique( triangles2.flatten() )
+            
+            # 再將相鄰的加入
+            index3b = lq.linq(index3).select_many(lambda x: dict_adjacency[x]).concat(index3).distinct().to_list()
+            
             # [1,2,4] -> [F T T F T F F F]
             indexResult = np.full(len(z), False)
-            indexResult[index3] = True
+            indexResult[index3b] = True
             return ~indexResult
 
             # 直接用 vertex normals 是不足夠的 

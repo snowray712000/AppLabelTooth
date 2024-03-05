@@ -4,6 +4,7 @@ import numpy as np
 import numpy.typing as npt
 import os # os.path 常用
 import linque as lq
+import shutil # 檔案處理
 
 import Easy.TpO3d as TpO3d
 from Easy.easyopen3d import easyo3d
